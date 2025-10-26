@@ -179,6 +179,7 @@ cd /opt/ethereum-attendance
 - 优化Dockerfile构建过程，修复构建循环问题
 - 简化智能合约编译命令，移除可能导致问题的详细调试输出
 - 本地验证智能合约编译正常工作
+- 修复Dockerfile中.env.example文件未正确复制的问题
 
 ### 5.2 克隆代码
 

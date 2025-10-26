@@ -23,6 +23,7 @@ RUN npm ci --no-audit --no-fund
 COPY contracts/ ./contracts/
 COPY scripts/ ./scripts/
 COPY hardhat.config.js ./
+COPY .env.example ./
 
 # 创建.env文件并设置必要的环境变量
 RUN cp .env.example .env && \
