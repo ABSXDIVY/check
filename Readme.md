@@ -7,6 +7,7 @@
 ## 一、项目简介
 
 以太坊考勤系统是一个基于区块链技术的去中心化考勤解决方案，使用智能合约确保考勤数据的不可篡改性和透明性。该系统由三个主要组件构成：
+
 - **以太坊节点**：提供区块链交互能力
 - **后端服务**：处理业务逻辑和智能合约交互
 - **前端应用**：用户交互界面
@@ -16,10 +17,12 @@
 本项目提供以下工具帮助解决Git冲突问题：
 
 ### 2.1 本地冲突解决
+
 - **local_conflict_resolver.bat** - Windows批处理脚本，提供图形化界面解决本地Git冲突
 - **SERVER_LOCAL_GIT_SYNC_FIX.md** - 详细文档说明如何确保本地与服务器同步
 
 ### 2.2 服务器冲突解决
+
 - **resolve_conflicts.sh** - 服务器端冲突解决脚本
 - **GIT_CONFLICT_RESOLUTION.md** - Git冲突解决通用指南
 - **LOCAL_GIT_CONFLICT_RESOLUTION.md** - 本地冲突解决指南
@@ -27,6 +30,7 @@
 ## 三、服务器环境要求
 
 ### 3.1 基本配置
+
 - **操作系统**: Ubuntu 24.04 64-bit
 - **CPU**: 2核或以上
 - **内存**: 4GB或以上
@@ -34,11 +38,13 @@
 - **网络**: 稳定的互联网连接
 
 ### 3.2 系统依赖
+
 - Docker
 - Docker Compose
 - Git
 
 ### 3.3 阿里云Docker镜像加速器
+
 为解决Docker拉取镜像超时问题，本项目提供了阿里云镜像加速器配置脚本：
 
 ```bash
@@ -54,12 +60,56 @@ chmod +x setup_aliyun_docker_mirror.sh
 **最新优化**:
 1. 配置阿里云Alpine镜像源，显著提升构建速度和稳定性
 2. 移除Dockerfile中的冗余依赖安装步骤，节省构建时间
-3. 优化npm安装命令，添加--no-audit --no-fund参数加速安装
-4. 删除不必要的开发依赖清理和重新安装步骤
-5. 修复Dockerfile语法错误，确保多行命令正确执行
-6. 实现了多阶段构建优化，减小最终镜像体积
-7. 创建了.dockerignore文件，排除不必要的文件，提高构建效率
-8. 添加了详细的编译错误诊断输出，方便排查问题
+3. 优化npm安装命令，添加--no-audit --no-fund --no-progress --prefer-offline参数加速安装
+4. 配置阿里云npm镜像源(registry.npmmirror.com)，大幅提升依赖下载速度
+5. 添加多个npm配置优化项，包括disturl和driver CDN镜像
+6. 删除不必要的开发依赖清理和重新安装步骤
+7. 修复Dockerfile语法错误，确保多行命令正确执行
+8. 实现了多阶段构建优化，减小最终镜像体积
+9. 创建了.dockerignore文件，排除不必要的文件，提高构建效率
+10. 添加了详细的编译错误诊断输出，方便排查问题
+11. 创建了冲突解决工具脚本，解决服务器端有修改无法pull的问题
+
+## 三、冲突解决工具
+
+当服务器端有本地修改导致无法执行 `git pull`时，可以使用以下工具安全地处理这种情况：
+
+### Linux/Mac环境使用方法
+
+```bash
+# 赋予脚本执行权限
+chmod +x fix-server-conflict.sh
+
+# 运行脚本
+./fix-server-conflict.sh
+```
+
+### Windows环境使用方法
+
+```batch
+# 直接运行批处理脚本
+fix-server-conflict.bat
+```
+
+### 工具功能说明
+
+脚本提供三种处理方式：
+
+1. **保存本地修改到临时分支**：
+
+   - 将当前修改保存到一个以时间戳命名的临时分支
+   - 然后强制更新master分支到最新版本
+   - 适合需要保留本地修改并在之后进行合并的情况
+2. **使用stash暂存**：
+
+   - 使用git stash暂存当前修改
+   - 拉取最新代码后再恢复暂存的修改
+   - 适合简单的修改场景
+3. **放弃所有本地修改**：
+
+   - 永久放弃所有本地修改和未跟踪文件
+   - 强制重置到远程仓库的最新版本
+   - 谨慎使用！此操作不可恢复
 
 ## 四、服务器环境准备
 
@@ -121,8 +171,8 @@ EOF
 
 ```bash
 # 创建项目目录
-mkdir -p /opt/ethereum-attendance
-cd /opt/ethereum-attendance
+mkdir -p /opt/ethereum-attendances
+cd /opt/ethereum-attendances
 ```
 
 ### 5.2 克隆代码
@@ -136,7 +186,7 @@ git clone https://github.com/ABSXDIVY/check.git
 
 ```bash
 # 在项目目录中执行
-cd /opt/ethereum-attendance/check
+cd /opt/ethereum-attendances/check
 
 # 创建环境配置文件
 cp .env.example .env
@@ -208,6 +258,7 @@ docker-compose ps
 ```
 
 **重要配置更新**：
+
 1. 已将docker-compose.yml版本从3.8降级为3.7，以提高兼容性
 2. 优化了资源限制配置，移除了不支持的CPU保留参数(reservations.cpus)
 3. 修改了CPU限制参数格式，从字符串格式('1')改为数字格式(1)
@@ -215,6 +266,7 @@ docker-compose ps
 这些优化解决了启动服务时出现的警告和错误，确保系统在阿里云环境中稳定运行。
 
 **注意事项：**
+
 - 如果收到"No containers to restart"错误，说明容器尚未创建，请使用 `up -d`而非 `restart`命令
 - 环境变量文件现已修复格式，所有值都添加了引号以解决Python-dotenv解析错误
 - 如需停止服务，使用 `docker-compose down`
@@ -327,50 +379,52 @@ cp -r /opt/ethereum-attendance/check/eth-data /path/to/backup/
 ### 8.1 常见问题
 
 1. **镜像拉取失败 - "not found"错误**
+
    - 确保已配置阿里云Docker镜像加速器
    - 项目已将Node.js版本从18-alpine更改为16-alpine，提高兼容性
-   - 执行`docker info | grep -A 1 "Registry Mirrors"`确认镜像源配置生效
-
+   - 执行 `docker info | grep -A 1 "Registry Mirrors"`确认镜像源配置生效
 2. **智能合约编译失败**
+
    - 确保所有必要的依赖包都已安装
    - Dockerfile已更新为安装完整的开发依赖和Hardhat插件
    - 如遇编译错误，检查solidity版本兼容性（当前使用0.8.20）
    - 查看详细编译日志获取具体错误信息
-
 3. **npm依赖安装警告**
+
    - 部分依赖包显示废弃警告是正常现象，通常不影响功能
    - 项目已优化npm安装过程，使用npm ci提高稳定性
    - 如果出现依赖错误，确保使用最新的package-lock.json文件
+4. **docker-compose警告 - "resources.reservations.cpus"不支持**
 
-3. **docker-compose警告 - "resources.reservations.cpus"不支持**
    - 项目已修复此问题，移除了不支持的CPU保留参数
    - 确保使用最新版本的docker-compose.yml文件
+5. **服务无法启动**
 
-4. **服务无法启动**
    - 检查Docker和Docker Compose是否正确安装
    - 查看容器日志以获取详细错误信息
    - 确保所有必要的端口未被占用
+6. **连接以太坊节点失败**
 
-5. **连接以太坊节点失败**
    - 确保以太坊节点容器正在运行
    - 检查网络配置是否正确
    - 验证ETH_CONNECTION_RETRIES等连接参数设置
+7. **前端无法连接后端**
 
-6. **前端无法连接后端**
    - 确认后端服务正在运行
    - 检查CORS配置是否包含前端URL
    - 验证REACT_APP_BACKEND_URL环境变量设置正确
-1. **服务无法启动**
+8. **服务无法启动**
+
    - 检查Docker和Docker Compose是否正确安装
    - 查看容器日志以获取详细错误信息
+9. **连接以太坊节点失败**
 
-2. **连接以太坊节点失败**
    - 确保以太坊节点容器正在运行
    - 检查网络配置是否正确
+10. **前端无法连接后端**
 
-3. **前端无法连接后端**
-   - 确认后端服务正在运行
-   - 检查CORS配置是否包含前端URL
+    - 确认后端服务正在运行
+    - 检查CORS配置是否包含前端URL
 
 ### 8.2 性能优化
 
@@ -404,11 +458,12 @@ cp -r /opt/ethereum-attendance/check/eth-data /path/to/backup/
 ## 九、安全注意事项
 
 1. **生产环境部署**
+
    - 不要在生产环境中使用开发模式的以太坊节点
    - 使用真实的以太坊网络或测试网络
    - 确保私钥安全存储
-
 2. **网络安全**
+
    - 配置防火墙，只开放必要的端口
    - 使用HTTPS保护通信
    - 定期更新系统和依赖
@@ -420,38 +475,40 @@ cp -r /opt/ethereum-attendance/check/eth-data /path/to/backup/
 本项目已实施以下Docker构建优化措施：
 
 1. **使用多阶段构建**:
+
    - 将智能合约编译和服务构建分离
    - 清理不必要的开发依赖
    - 减小最终镜像体积
-
 2. **优化依赖安装**:
-   - 使用`npm ci`代替`npm install`，确保版本一致性
+
+   - 使用 `npm ci`代替 `npm install`，确保版本一致性
    - 清理npm缓存减少镜像大小
    - 安装必要的构建依赖（git、python3、make、g++）
-
 3. **构建上下文优化**:
-   - 创建`.dockerignore`文件排除不必要的文件
-   - 选择性地复制文件，避免复制node_modules等大型目录
 
+   - 创建 `.dockerignore`文件排除不必要的文件
+   - 选择性地复制文件，避免复制node_modules等大型目录
 4. **镜像体积优化**:
+
    - 使用Alpine基础镜像减小镜像大小
    - 安装最小化的运行时依赖
 
 ### 10.2 环境一致性
 
 1. **本地Docker配置**
+
    - 确保本地Docker版本与服务器兼容
    - 配置适当的镜像源以加速镜像拉取
-
 2. **开发环境设置**
+
    - 使用相同版本的Node.js (16.x)
    - 保持依赖版本同步
-
 3. **代码同步流程**
+
    - 本地开发完成后，先在本地构建测试
    - 推送代码前解决所有冲突
    - 更新服务器代码前备份重要数据
-
 4. **部署验证**
+
    - 部署后验证所有服务是否正常运行
    - 检查日志确保没有错误
