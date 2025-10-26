@@ -4,23 +4,47 @@
 
 以太坊考勤系统是一个基于区块链技术的去中心化考勤解决方案，使用智能合约确保考勤数据的不可篡改性和透明性。
 
-## 二、服务器环境要求
+## 二、冲突解决工具
 
-### 2.1 基本配置
+本项目提供以下工具帮助解决Git冲突问题：
+
+### 2.1 本地冲突解决
+- **local_conflict_resolver.bat** - Windows批处理脚本，提供图形化界面解决本地Git冲突
+- **SERVER_LOCAL_GIT_SYNC_FIX.md** - 详细文档说明如何确保本地与服务器同步
+
+### 2.2 服务器冲突解决
+- **resolve_conflicts.sh** - 服务器端冲突解决脚本
+- **GIT_CONFLICT_RESOLUTION.md** - Git冲突解决通用指南
+- **LOCAL_GIT_CONFLICT_RESOLUTION.md** - 本地冲突解决指南
+
+## 三、服务器环境要求
+
+### 3.1 基本配置
 - **操作系统**: Ubuntu 24.04 64-bit
 - **CPU**: 2核或以上
 - **内存**: 4GB或以上
 - **存储**: 50GB SSD
 - **网络**: 稳定的互联网连接
 
-### 2.2 系统依赖
+### 3.2 系统依赖
 - Docker
 - Docker Compose
 - Git
 
-## 三、服务器环境准备
+### 3.3 阿里云Docker镜像加速器
+为解决Docker拉取镜像超时问题，本项目提供了阿里云镜像加速器配置脚本：
 
-### 3.1 系统更新与依赖安装
+```bash
+# 在服务器上执行
+chmod +x setup_aliyun_docker_mirror.sh
+./setup_aliyun_docker_mirror.sh
+```
+
+脚本将自动配置多个阿里云区域的镜像源，并优化Docker性能参数。
+
+## 四、服务器环境准备
+
+### 4.1 系统更新与依赖安装
 
 ```bash
 # 更新系统软件包
