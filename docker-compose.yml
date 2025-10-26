@@ -1,4 +1,6 @@
-version: '3.8'
+version: '3.7'
+
+# 以太坊考勤系统Docker编排配置
 
 services:
   # 内置轻量级以太坊开发节点
@@ -34,10 +36,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'  # 限制CPU使用
+          cpus: 1  # 限制CPU使用
           memory: 1G  # 限制内存使用
-        reservations:
-          memory: 512M  # 仅保留内存配置，移除不支持的CPU保留
     # 健康检查配置
     healthcheck:
       test: ["CMD", "curl", "-s", "http://localhost:8545/"]
@@ -88,10 +88,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: 1
           memory: 1G
-        reservations:
-          memory: 512M  # 仅保留内存配置，移除不支持的CPU保留
 
   # 前端服务
   frontend:
@@ -112,10 +110,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: 0.5
           memory: 512M
-        reservations:
-          memory: 256M
     # 健康检查
     healthcheck:
       test: ["CMD", "curl", "-s", "http://localhost/"]

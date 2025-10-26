@@ -1,0 +1,56 @@
+# 排除Git相关文件
+.git/
+.gitignore
+
+# 排除node_modules目录
+node_modules/
+**/node_modules/
+
+# 排除环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 排除日志文件
+logs/
+*.log
+
+# 排除构建输出目录
+dist/
+build/
+
+# 排除编辑器相关文件
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# 排除操作系统文件
+.DS_Store
+Thumbs.db
+
+# 排除测试目录
+test/
+coverage/
+
+# 排除Docker相关文件
+docker-compose.override.yml
+docker-compose.debug.yml
+
+# 排除备份文件
+*.bak
+*.tmp
+*.swp
+
+# 排除Windows批处理文件
+*.bat
+*.ps1
+
+# 排除Linux脚本文件（除了Docker相关的）
+*.sh
+!.docker/*
+!setup_aliyun_docker_mirror.sh
