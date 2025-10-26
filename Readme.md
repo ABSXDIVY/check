@@ -170,16 +170,18 @@ docker-compose --version
 
    ```bash
    # 创建项目目录
-   mkdir -p /opt/ethereum-attendance
-   cd /opt/ethereum-attendance
-
-   # 克隆代码
-   git clone https://github.com/ABSXDIVY/check.git .
+    mkdir -p /opt/ethereum-attendance
+    cd /opt/ethereum-attendance
+    
+    # 克隆代码 - 注意：克隆后的主文件夹名是check
+    git clone https://github.com/ABSXDIVY/check.git
    ```
 2. **环境配置**：
 
    ```bash
    # 创建环境配置文件 - 完整命令格式
+    # 进入check目录
+    cd /opt/ethereum-attendance/check
     # 第一个命令复制主环境配置文件
     cp .env.example .env
     # 第二个命令复制服务器环境配置文件
@@ -210,8 +212,8 @@ docker-compose --version
 
    ```bash
    # 为Ubuntu 24.04优化Docker性能
-   echo '{"default-address-pools":[{"base":"172.20.0.0/16","size":24}]}' > /etc/docker/daemon.json
-   systemctl restart docker
+    echo '{"default-address-pools":[{"base":"172.20.0.0/16","size":24}]}' > /etc/docker/daemon.json
+    systemctl restart docker
 
    # 为Docker添加用户权限（可选）
    usermod -aG docker $USER
@@ -220,9 +222,9 @@ docker-compose --version
 
    ```bash
    # 在项目目录中执行
-   cd /opt/ethereum-attendance
-
-   # 一键启动完整系统（以太坊节点 + 后端 + 前端）
+    cd /opt/ethereum-attendance/check
+    
+    # 一键启动完整系统（以太坊节点 + 后端 + 前端）
    docker-compose up -d
 
    # 查看启动状态
@@ -237,7 +239,7 @@ docker-compose --version
 
    ```bash
    # 编辑docker-compose.yml
-   nano docker-compose.yml
+    nano /opt/ethereum-attendance/check/docker-compose.yml
    ```
 
    确保backend服务的环境变量配置正确：
@@ -263,7 +265,7 @@ docker-compose --version
 
    ```bash
    # 编辑前端API配置文件
-   cd client
+    cd /opt/ethereum-attendance/check/client
    cp .env.example .env
    nano .env
    ```
