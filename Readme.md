@@ -115,45 +115,362 @@
 
 ## 阿里云部署全流程指南
 
+### Ubuntu 24.04 64位专属部署指南
+
+**为Ubuntu 24.04 LTS 64位系统优化的完整部署流程，包含前端连接配置！**
+
+#### 一、服务器环境准备
+
+1. **阿里云服务器配置**：
+   - 选择ECS云服务器，推荐配置：2核4G或以上
+   - 操作系统：Ubuntu 24.04 LTS 64位
+   - 安全组开放端口：80/tcp、3001/tcp、22/tcp、8545/tcp、30303/tcp
+
+2. **系统更新与依赖安装**：
+
+   ```bash
+   # 连接服务器后，以root用户执行
+   # 更新系统软件包
+   apt update && apt upgrade -y
+   
+   # 安装必要的基础软件
+   apt install -y apt-transport-https ca-certificates curl software-properties-common git
+   
+   # 优化系统参数（可选）
+   sysctl -w net.ipv4.tcp_fin_timeout=30
+   sysctl -w vm.swappiness=10
+   ```
+
+#### 二、Docker与Docker Compose安装
+
+```bash
+# 安装Docker（Ubuntu 24.04专用命令）
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+apt update
+apt install -y docker-ce docker-ce-cli containerd.io
+
+# 启动Docker服务并设置开机自启
+systemctl enable docker && systemctl start docker
+
+# 安装Docker Compose（最新版本）
+curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+# 验证安装
+docker --version
+docker-compose --version
+```
+
+#### 三、项目部署
+
+1. **克隆项目代码**：
+
+   ```bash
+   # 创建项目目录
+   mkdir -p /opt/ethereum-attendance
+   cd /opt/ethereum-attendance
+   
+   # 克隆代码
+   git clone https://github.com/ABSXDIVY/check.git .
+   ```
+
+2. **环境配置**：
+
+   ```bash
+   # 创建环境配置文件
+   cp .env.example .env
+   cp server/.env.example server/.env
+   
+   # 编辑服务器环境配置（使用Ubuntu 24.04优化参数）
+   nano server/.env
+   ```
+
+   在server/.env中填入以下内容：
+   ```
+   # 以太坊网络配置
+   ETHEREUM_RPC_URL=http://ethereum-node:8545
+   
+   # 服务器配置 - Ubuntu 24.04优化参数
+   PORT=3001
+   NODE_ENV=production
+   
+   # Ubuntu 24.04特有的网络优化
+   SOCKET_TIMEOUT=30000
+   CONNECTION_LIMIT=100
+   
+   # CORS配置
+   ALLOWED_ORIGINS=*
+   ```
+
+3. **Ubuntu 24.04专用优化（重要）**：
+
+   ```bash
+   # 为Ubuntu 24.04优化Docker性能
+   echo '{"default-address-pools":[{"base":"172.20.0.0/16","size":24}]}' > /etc/docker/daemon.json
+   systemctl restart docker
+   
+   # 为Docker添加用户权限（可选）
+   usermod -aG docker $USER
+   ```
+
+4. **启动服务**：
+
+   ```bash
+   # 在项目目录中执行
+   cd /opt/ethereum-attendance
+   
+   # 一键启动完整系统（以太坊节点 + 后端 + 前端）
+   docker-compose up -d
+   
+   # 查看启动状态
+   docker-compose ps
+   ```
+
+#### 四、前端连接服务器配置
+
+##### 4.1 服务器端配置（后端API地址）
+
+1. **修改Docker Compose中的CORS配置**：
+
+   ```bash
+   # 编辑docker-compose.yml
+   nano docker-compose.yml
+   ```
+
+   确保backend服务的环境变量配置正确：
+   ```yaml
+   environment:
+     - NODE_ENV=production
+     - ETHEREUM_RPC_URL=http://ethereum-node:8545
+     - ALLOWED_ORIGINS=*
+     - PORT=3001
+   ```
+
+2. **重启后端服务使配置生效**：
+
+   ```bash
+   docker-compose restart backend
+   ```
+
+##### 4.2 前端连接配置（如果需要单独部署前端）
+
+如果您需要将前端部署在单独的服务器上：
+
+1. **修改前端API连接地址**：
+
+   ```bash
+   # 编辑前端API配置文件
+   cd client
+   cp .env.example .env
+   nano .env
+   ```
+
+   在.env中填入以下内容：
+   ```
+   # 后端API地址（使用您的服务器公网IP）
+   REACT_APP_API_URL=http://您的服务器IP:3001/api
+   
+   # 以太坊RPC节点地址
+   REACT_APP_ETHEREUM_RPC_URL=http://您的服务器IP:8545
+   ```
+
+2. **重新构建前端**：
+
+   ```bash
+   # 安装依赖
+   npm install
+   
+   # 构建前端
+   npm run build
+   
+   # 将构建产物复制到Web服务器
+   # 例如使用Nginx部署
+   ```
+
+#### 五、Ubuntu 24.04 特有的维护与优化
+
+##### 5.1 系统监控与日志管理
+
+```bash
+# 安装监控工具
+apt install -y htop glances
+
+# 设置日志轮转（Ubuntu 24.04优化）
+cat > /etc/logrotate.d/docker-containers << 'EOF'
+/var/lib/docker/containers/*/*.log {
+  rotate 7
+  daily
+  compress
+  delaycompress
+  missingok
+  copytruncate
+}
+EOF
+```
+
+##### 5.2 防火墙配置（Ubuntu 24.04 ufw）
+
+```bash
+# 启用防火墙
+ufw enable
+
+# 开放必要端口
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 3001/tcp
+ufw allow 8545/tcp
+ufw allow 30303/tcp
+
+# 查看防火墙状态
+ufw status
+```
+
+##### 5.3 自动更新设置
+
+```bash
+# 配置自动安全更新
+apt install -y unattended-upgrades
+
+dpkg-reconfigure -plow unattended-upgrades
+```
+
+#### 六、常见问题与故障排除（Ubuntu 24.04专用）
+
+##### 6.1 Docker相关问题
+
+```bash
+# 如果Docker服务无法启动
+systemctl status docker
+journalctl -xeu docker.service
+
+# 解决Docker网络问题（Ubuntu 24.04常见）
+ip link set docker0 down
+brctl delbr docker0
+systemctl restart docker
+```
+
+##### 6.2 以太坊节点连接问题
+
+```bash
+# 检查节点是否正常运行
+docker exec -it ethereum-node curl -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://localhost:8545
+
+# 查看以太坊节点日志
+docker logs -f ethereum-node
+```
+
+##### 6.3 前端连接后端失败
+
+```bash
+# 检查后端服务状态
+docker-compose ps backend
+
+# 查看后端API是否可访问
+curl http://localhost:3001/api/health
+
+# 检查网络连通性
+netstat -tuln | grep 3001
+```
+
+### Windows Server部署指南（适合Windows用户）
+
+**专为Windows用户优化的部署方案，无需熟悉Linux命令！**
+
+1. **阿里云Windows服务器准备**：
+
+   - 登录阿里云控制台，选择ECS云服务器
+   - 操作系统选择：Windows Server 2019/2022 数据中心版
+   - 推荐配置：2核4G或以上
+   - 安全组开放端口：80/tcp、3001/tcp、22/tcp、8545/tcp、30303/tcp
+2. **环境配置**：
+
+   ```powershell
+   # 以管理员身份运行PowerShell
+   # 安装Git
+   winget install --id Git.Git -e --source winget
+
+   # 安装Docker Desktop for Windows
+   # 访问 https://www.docker.com/products/docker-desktop 下载并安装
+   # 安装完成后重启系统
+   ```
+3. **部署项目**：
+
+   ```powershell
+   # 创建项目目录
+   mkdir C:\ethereum-attendance
+   cd C:\ethereum-attendance
+
+   # 克隆代码（如果能访问GitHub）
+   git clone 您的代码仓库URL .
+
+   # 或者手动复制代码到该目录
+   ```
+4. **启动服务**：
+
+   ```powershell
+   # 以管理员身份运行PowerShell
+   cd C:\ethereum-attendance
+
+   # 启动Docker Desktop（已安装并运行则跳过）
+   & "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+   Start-Sleep -Seconds 30
+
+   # 启动所有服务
+   docker-compose up -d
+   ```
+5. **验证部署**：
+
+   ```powershell
+   # 检查服务状态
+   docker-compose ps
+
+   # 访问应用 - 浏览器访问: http://localhost 或 http://您的服务器IP
+   ```
+
 ### 方案一：【推荐】简易一键部署（无需注册任何外部服务）
 
 **⚠️ 无需注册Infura、Alchemy或购买ETH测试币！** 这是最简单的部署方式，适合所有用户。
 
 1. **阿里云服务器准备**：
+
    - 登录阿里云控制台，选择ECS云服务器
    - 推荐配置：2核4G或以上，Ubuntu 20.04 LTS 64位
    - 安全组开放端口：80/tcp、3001/tcp、22/tcp、8545/tcp、30303/tcp
-
 2. **环境配置（一键安装）**：
+
    ```bash
    # 更新系统并安装所有必要软件
    sudo apt update && sudo apt upgrade -y && sudo apt install git -y
-   
+
    # 一键安装Docker和Docker Compose
    curl -fsSL https://get.docker.com | sudo sh
    sudo systemctl enable docker && sudo systemctl start docker
    ```
-
 3. **部署项目（两步完成）**：
+
    ```bash
    # 创建目录并克隆代码
    mkdir -p ~/ethereum-attendance && cd ~/ethereum-attendance
    git clone 您的代码仓库URL .
-   
+
    # 一键启动完整系统
    sudo docker-compose up -d
    ```
-
 4. **验证部署**：
+
    ```bash
    # 检查服务状态
    sudo docker-compose ps
-   
+
    # 访问应用 - 启动后约2分钟即可使用
    # 浏览器访问: http://您的服务器IP
    ```
 
 **系统特性：**
+
 - **内置轻量级以太坊节点**：无需外部服务，自动在服务器本地运行
 - **自动部署合约**：系统启动时自动部署智能合约，无需手动操作
 - **容错设计**：即使以太坊节点未完全同步，系统也能在备用模式下正常运行
@@ -161,6 +478,7 @@
 - **自动恢复机制**：服务异常时会自动重启，确保系统稳定运行
 
 **使用提示：**
+
 - 首次启动后约2分钟即可访问系统使用基础功能
 - 无需等待区块链完全同步，系统已优化为边同步边可用
 - 内置的以太坊节点资源占用小，适合2核4G配置的云服务器
@@ -170,27 +488,28 @@
 如果您需要连接到公共以太坊网络或已拥有Infura/Alchemy账户，可以选择此方案。
 
 1. **阿里云服务器准备**：
+
    - 登录阿里云控制台，选择ECS云服务器
    - 推荐配置：2核4G或以上，Ubuntu 20.04 LTS 64位
    - 安全组开放端口：80/tcp、3001/tcp、22/tcp
-
 2. **环境配置**：
+
    ```bash
    # 更新系统并安装软件
    sudo apt update && sudo apt upgrade -y && sudo apt install git -y
-   
+
    # 安装Docker和Docker Compose
    curl -fsSL https://get.docker.com | sudo sh
    sudo systemctl enable docker && sudo systemctl start docker
    ```
-
 3. **克隆项目代码**：
+
    ```bash
    mkdir -p ~/ethereum-attendance && cd ~/ethereum-attendance
    git clone 您的代码仓库URL .
    ```
-
 4. **配置环境变量**：
+
    ```bash
    # 编辑后端环境配置文件
    cd server
@@ -199,44 +518,89 @@
    ```
 
    在.env文件中填入：
+
    ```dotenv
    # 以太坊网络配置（使用您的Infura/Alchemy API URL）
    ETHEREUM_RPC_URL=https://sepolia.infura.io/v3/您的API密钥
    CONTRACT_ADDRESS=您部署的合约地址
    PRIVATE_KEY=您的钱包私钥
-   
+
    # 服务器配置
    PORT=3001
    NODE_ENV=production
-   
+
    # CORS配置
    ALLOWED_ORIGINS=http://您的服务器IP
    ```
-
 5. **修改Docker Compose配置**：
+
    ```bash
    # 返回项目根目录
    cd ..
-   
+
    # 编辑docker-compose.yml文件，注释掉ethereum-node服务部分
    nano docker-compose.yml
    ```
-
 6. **启动服务**：
+
    ```bash
    # 仅启动后端和前端服务
    sudo docker-compose up -d backend frontend
    ```
-
 7. **验证部署**：
+
    ```bash
    # 检查服务状态
    sudo docker-compose ps
    ```
 
+## Windows本地开发环境部署
+
+如果您想在本地Windows电脑上开发或测试系统，可以按照以下步骤操作：
+
+1. **环境准备**：
+
+   ```powershell
+   # 以管理员身份运行PowerShell
+   # 安装Git
+   winget install --id Git.Git -e --source winget
+
+   # 安装Node.js（包含npm）
+   winget install --id OpenJS.NodeJS -e --source winget
+
+   # 安装Docker Desktop for Windows
+   # 访问 https://www.docker.com/products/docker-desktop 下载并安装
+   # 安装完成后重启系统
+   ```
+2. **获取项目代码**：
+
+   ```powershell
+   # 克隆代码
+   git clone 您的代码仓库URL
+   cd 项目目录
+   ```
+3. **本地开发模式启动**：
+
+   ```powershell
+   # 启动Docker Desktop（已安装并运行则跳过）
+   & "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+   Start-Sleep -Seconds 30
+
+   # 启动完整开发环境（以太坊节点 + 后端 + 前端）
+   docker-compose up -d
+   ```
+4. **Windows特有的故障排除**：
+
+   ```powershell
+   # 如果遇到端口占用问题，查找并停止占用端口的进程
+   netstat -ano | findstr :80
+   taskkill /PID 进程ID /F
+
+   # 如果Docker启动失败，尝试重启Docker服务
+   Restart-Service docker
+   ```
+
 ## 使用Docker Compose部署
-
-
 
 ### 本地开发环境部署
 
@@ -248,6 +612,7 @@ docker-compose up -d
 ```
 
 **特点：**
+
 - 内置轻量级以太坊开发节点，无需外部服务
 - 自动部署合约和初始化测试账户
 - 系统启动后约2分钟即可使用
@@ -348,18 +713,9 @@ A: 支持所有现代浏览器，包括Chrome、Firefox、Edge等最新版本。
 4. **性能监控**：监控系统资源使用情况，确保性能稳定
 5. **安全审计**：定期进行安全审计，确保系统安全
 
-   
-   
 ## 许可证
 
 本项目采用MIT许可证开源。
-
-   
-   
-
-
-   
-   
 
 ### 本地开发环境部署
 
