@@ -1,32 +1,54 @@
 # 构建智能合约和后端服务的基础镜像
-FROM node:18-alpine AS base
+# 使用更稳定的Node.js版本以确保在阿里云环境下可用性
+FROM node:16-alpine AS base
 
 # 设置工作目录
 WORKDIR /app
 
-# 复制根目录package.json和package-lock.json
+# 切换到阿里云的Alpine镜像源以加速构建
+RUN echo 'https://mirrors.aliyun.com/alpine/v3.16/main/' > /etc/apk/repositories && \
+    echo 'https://mirrors.aliyun.com/alpine/v3.16/community/' >> /etc/apk/repositories
+
+# 安装构建依赖
+RUN apk add --no-cache git python3 make g++
+
+# 复制根目录package.json和package-lock.json（使用缓存优化）
 COPY package*.json ./
 
-# 安装依赖
-RUN npm install
+# 安装所有依赖（包括开发依赖）用于编译合约
+# 注意：这一步已经包含了hardhat和相关依赖，无需重复安装
+RUN npm ci --no-audit --no-fund
 
-# 复制项目文件
-COPY . .
+# 复制项目文件（排除node_modules等不必要文件）
+COPY contracts/ ./contracts/
+COPY scripts/ ./scripts/
+COPY hardhat.config.js ./
 
-# 编译智能合约
-RUN npx hardhat compile
+# 编译智能合约（添加--verbose标志以便更好地诊断错误）
+RUN npx hardhat compile --verbose
+
+# 无需清理node_modules和重新安装生产依赖，因为我们只需要编译后的合约文件
+# 这种方法可以避免重复安装依赖，节省构建时间
 
 # === 后端服务镜像 ===
-FROM node:18-alpine AS backend
+FROM node:16-alpine AS backend
 
-# 设置工作目录
+# 保持Node.js版本一致性，避免跨版本兼容性问题
 WORKDIR /app
 
-# 复制后端package.json和package-lock.json
+# 切换到阿里云的Alpine镜像源以加速构建
+RUN echo 'https://mirrors.aliyun.com/alpine/v3.16/main/' > /etc/apk/repositories && \
+    echo 'https://mirrors.aliyun.com/alpine/v3.16/community/' >> /etc/apk/repositories
+
+# 安装必要的依赖
+RUN apk add --no-cache curl
+
+# 复制服务器package.json和package-lock.json（使用缓存优化）
 COPY server/package*.json ./
 
-# 安装后端依赖
-RUN npm install
+# 使用npm ci代替npm install以确保一致性和速度，添加标志进一步加速
+RUN npm ci --production --no-audit --no-fund && \
+    npm cache clean --force
 
 # 复制编译后的合约文件
 COPY --from=base /app/artifacts ./artifacts
@@ -47,16 +69,24 @@ ENV NODE_ENV=production
 CMD ["npm", "start"]
 
 # === 前端服务镜像 ===
-FROM node:18-alpine AS frontend
+FROM node:16-alpine AS frontend
 
-# 设置工作目录
+# 保持Node.js版本一致性，避免跨版本兼容性问题
 WORKDIR /app
 
-# 复制前端package.json和package-lock.json
+# 切换到阿里云的Alpine镜像源以加速构建
+RUN echo 'https://mirrors.aliyun.com/alpine/v3.16/main/' > /etc/apk/repositories && \
+    echo 'https://mirrors.aliyun.com/alpine/v3.16/community/' >> /etc/apk/repositories
+
+# 安装构建依赖
+RUN apk add --no-cache git python3 make g++
+
+# 复制前端代码和package.json（使用缓存优化）
 COPY client/package*.json ./
 
-# 安装前端依赖
-RUN npm install
+# 使用npm ci优化安装过程，添加标志加速安装
+RUN npm ci --no-audit --no-fund && \
+    npm cache clean --force
 
 # 复制前端源代码
 COPY client/ ./
