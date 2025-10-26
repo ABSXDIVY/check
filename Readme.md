@@ -170,9 +170,15 @@ EOF
 
 ```bash
 # 创建项目目录
-mkdir -p /opt/ethereum-attendances
-cd /opt/ethereum-attendances
+```bash
+mkdir -p /opt/ethereum-attendance
+cd /opt/ethereum-attendance
 ```
+
+## 最近更新
+- 优化Dockerfile构建过程，修复构建循环问题
+- 简化智能合约编译命令，移除可能导致问题的详细调试输出
+- 本地验证智能合约编译正常工作
 
 ### 5.2 克隆代码
 
@@ -185,7 +191,7 @@ git clone https://github.com/ABSXDIVY/check.git
 
 ```bash
 # 在项目目录中执行
-cd /opt/ethereum-attendances/check
+cd /opt/ethereum-attendance/check
 
 # 创建环境配置文件
 cp .env.example .env
