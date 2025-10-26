@@ -98,4 +98,8 @@ echo ""
 echo "建议执行以下命令监控服务状态："
 echo "  docker-compose logs -f backend   # 查看后端日志"
 echo "  docker-compose logs -f frontend  # 查看前端日志"
+<<<<<<< HEAD
 echo "  docker-compose logs -f ethereum-node  # 查看以太坊节点日志"
+=======
+echo "  docker-compose logs -f ethereum-node  # 查看以太坊节点日志"
+>>>>>>> fdb21fce4b9a067b8ee8a6d4e31b810d7174b8f9

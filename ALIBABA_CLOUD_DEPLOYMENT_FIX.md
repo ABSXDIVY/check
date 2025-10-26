@@ -181,6 +181,10 @@ sudo ufw allow 3001/tcp
 sudo ufw allow 8545/tcp
 sudo ufw allow 8546/tcp
 sudo ufw enable
+<<<<<<< HEAD
 ```
 
 请按照以上步骤依次操作，特别注意配置阿里云Docker镜像加速器，这通常能解决拉取超时的问题。
+=======
+```
+>>>>>>> fdb21fce4b9a067b8ee8a6d4e31b810d7174b8f9
