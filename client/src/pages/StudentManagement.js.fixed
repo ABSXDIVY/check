@@ -1,0 +1,237 @@
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Button, Modal, Form, Input, Select, message, Popconfirm } from 'antd';
+import { UserOutlined, SearchOutlined, ReloadOutlined, TeamOutlined, SettingOutlined } from '@ant-design/icons';
+import axios from 'axios';
+import './StudentManagement.css';
+
+const { Option } = Select;
+const { Search } = Input;
+
+const StudentManagement = ({ walletAddress, isConnected, isAdmin, isOwner }) => {
+  const [students, setStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [adminModalVisible, setAdminModalVisible] = useState(false);
+  const [adminAction, setAdminAction] = useState('add'); // 'add' or 'remove'
+  const [adminForm] = Form.useForm();
+  const [adminLoading, setAdminLoading] = useState(false);
+
+  // Fetch all students
+  const fetchAllStudents = async () => {
+    if (!isConnected || (!isAdmin && !isOwner)) {
+      message.warning('您没有权限查看学生列表');
+      return;
+    }
+
+    setStudentsLoading(true);
+    try {
+      const response = await axios.get('http://localhost:3001/api/students');
+      setStudents(response.data);
+      setFilteredStudents(response.data);
+    } catch (error) {
+      console.error('获取学生列表失败:', error);
+      message.error('获取学生列表失败，请稍后重试');
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
+
+  // Filter students based on search text
+  useEffect(() => {
+    if (searchText.trim() === '') {
+      setFilteredStudents(students);
+    } else {
+      const filtered = students.filter(student => 
+        student.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(searchText.toLowerCase()) ||
+        student.address.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredStudents(filtered);
+    }
+  }, [searchText, students]);
+
+  // Handle admin management
+  const handleAdminManagement = (action) => {
+    setAdminAction(action);
+    setAdminModalVisible(true);
+  };
+
+  // Handle add admin
+  const handleAddAdmin = async (values) => {
+    if (!isConnected || !isOwner) {
+      message.warning('只有所有者可以添加管理员');
+      return;
+    }
+
+    setAdminLoading(true);
+    try {
+      await axios.post('http://localhost:3001/api/admin/add', {
+        adminAddress: values.adminAddress,
+        ownerAddress: walletAddress
+      });
+      message.success('管理员添加成功');
+      setAdminModalVisible(false);
+      adminForm.resetFields();
+    } catch (error) {
+      console.error('添加管理员失败:', error);
+      message.error('添加管理员失败，请稍后重试');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  // Handle remove admin
+  const handleRemoveAdmin = async (values) => {
+    if (!isConnected || !isOwner) {
+      message.warning('只有所有者可以移除管理员');
+      return;
+    }
+
+    setAdminLoading(true);
+    try {
+      await axios.post('http://localhost:3001/api/admin/remove', {
+        adminAddress: values.adminAddress,
+        ownerAddress: walletAddress
+      });
+      message.success('管理员移除成功');
+      setAdminModalVisible(false);
+      adminForm.resetFields();
+    } catch (error) {
+      console.error('移除管理员失败:', error);
+      message.error('移除管理员失败，请稍后重试');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  // Columns for student table
+  const columns = [
+    {
+      title: '学生ID',
+      dataIndex: 'studentId',
+      key: 'studentId',
+    },
+    {
+      title: '姓名',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: '钱包地址',
+      dataIndex: 'address',
+      key: 'address',
+      ellipsis: true,
+    },
+    {
+      title: '角色',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role) => (
+        <span>{role === 'admin' ? '管理员' : '学生'}</span>
+      ),
+    },
+  ];
+
+  return (
+    <div className="student-management">
+      <Card 
+        title="学生管理" 
+        extra={
+          (isAdmin || isOwner) && (
+            <div>
+              <Button 
+                type="primary" 
+                icon={<TeamOutlined />}
+                onClick={() => handleAdminManagement('add')}
+                disabled={!isConnected || !isOwner}
+                style={{ marginRight: 8 }}
+              >
+                添加管理员
+              </Button>
+              <Button 
+                danger 
+                icon={<TeamOutlined />}
+                onClick={() => handleAdminManagement('remove')}
+                disabled={!isConnected || !isOwner}
+              >
+                移除管理员
+              </Button>
+            </div>
+          )
+        }
+      >
+        <Search
+          placeholder="搜索学生姓名、ID或钱包地址"
+          allowClear
+          enterButton="搜索"
+          size="large"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ marginBottom: 16 }}
+        />
+        <Table
+          columns={columns}
+          dataSource={filteredStudents}
+          rowKey="studentId"
+          loading={studentsLoading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `共 ${total} 名学生`,
+          }}
+          locale={{
+            emptyText: studentsLoading ? '加载中...' : '暂无学生数据'
+          }}
+        />
+        <Button 
+          type="primary" 
+          size="small" 
+          style={{ marginTop: 10 }}
+          onClick={fetchAllStudents}
+          disabled={!isConnected || studentsLoading}
+        >
+          刷新学生列表
+        </Button>
+      </Card>
+      {/* 管理员管理弹窗 */}
+      <Modal
+        title={adminAction === 'add' ? '添加管理员' : '移除管理员'}
+        open={adminModalVisible}
+        onCancel={() => setAdminModalVisible(false)}
+        footer={null}
+      >
+        <Form
+          form={adminForm}
+          layout="vertical"
+          onFinish={adminAction === 'add' ? handleAddAdmin : handleRemoveAdmin}
+          initialValues={{
+            adminAddress: ''
+          }}
+        >
+          <Form.Item
+            name="adminAddress"
+            label="管理员钱包地址"
+            rules={[{ required: true, message: '请输入管理员钱包地址' }, { pattern: /^0x[a-fA-F0-9]{40}$/, message: '请输入有效的以太坊地址' }]}
+          >
+            <Input placeholder="0x..." prefix={<UserOutlined />} />
+          </Form.Item>
+          <Form.Item>
+            <Button 
+              type="primary"
+              htmlType="submit" 
+              loading={adminLoading}
+              disabled={!isConnected || !isOwner}
+              block
+              size="large"
+            >
+              {adminAction === 'add' ? '添加管理员' : '移除管理员'}
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+};
+
+export default StudentManagement;

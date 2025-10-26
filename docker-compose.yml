@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # 内置轻量级以太坊开发节点
+  # 使用开发模式(--dev)而非公共测试网，确保零配置、快速启动和资源占用最小化
+  ethereum-node:
+    image: ethereum/client-go:stable
+    container_name: ethereum-node
+    volumes:
+      - eth-data:/root/.ethereum
+    ports:
+      - "8545:8545"  # JSON-RPC接口（容器外可访问）
+      - "30303:30303"  # 以太坊P2P端口
+    command: 
+      # 使用开发模式启动，自动生成账户和区块链
+      - --dev 
+      # 启用HTTP RPC服务
+      - --http 
+      - --http.addr=0.0.0.0 
+      - --http.corsdomain=* 
+      - --http.api=eth,web3,net,personal
+      # 降低挖矿难度，加快交易确认
+      - --dev.period=5 
+      # 启用挖矿
+      - --mine
+      # 降低资源占用
+      - --cache=256  # 内存缓存大小(MB)
+      # 开发网络ID
+      - --networkid=1337
+      # 允许不安全的解锁操作（仅用于开发环境）
+      - --allow-insecure-unlock
+    restart: unless-stopped
+    # 资源限制配置，适合云服务器环境
+    deploy:
+      resources:
+        limits:
+          cpus: '1'  # 限制CPU使用
+          memory: 1G  # 限制内存使用
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # 健康检查配置
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:8545/"]
+      interval: 10s  # 更频繁的健康检查
+      timeout: 5s
+      retries: 5
+      start_period: 30s  # 启动后30秒开始健康检查
+    # 优化日志输出
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # 后端服务
+  backend:
+    build:
+      context: .
+      target: backend
+    container_name: attendance-backend
+    ports:
+      - "3001:3001"
+    env_file:
+      - server/.env
+    environment:
+      - NODE_ENV=production
+      # 使用容器网络中的以太坊节点
+      - ETHEREUM_RPC_URL=http://ethereum-node:8545
+      # 连接重试配置，增强容错性
+      - ETH_CONNECTION_RETRIES=5
+      - ETH_CONNECTION_RETRY_DELAY=1000
+      - ETH_CONNECTION_TIMEOUT=5000
+    volumes:
+      - ./server/src:/app/src:ro  # 只读挂载源代码便于调试
+      - ./artifacts:/app/artifacts:ro  # 只读挂载编译后的合约
+    # 设置依赖关系，但使用软依赖，允许后端在以太坊节点就绪前启动
+    depends_on:
+      ethereum-node:
+        condition: service_started  # 只等待服务启动，不等待健康检查通过
+    # 添加健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # 前端服务
+  frontend:
+    build:
+      context: .
+      target: frontend
+    container_name: attendance-frontend
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  eth-data:  # 以太坊节点数据卷，实现数据持久化
+
+networks:
+  default:
+    name: attendance-network
+    driver: bridge
+
+# 部署说明：
+# 1. 一键启动：docker-compose up -d
+# 2. 系统将自动：
+#    - 启动内置以太坊开发节点（生成10个测试账户，每个账户10000 ETH）
+#    - 启动后端API服务
+#    - 启动前端Web界面
+# 3. 访问系统：http://服务器IP（端口80）
+# 4. 使用优势：
+#    - 无需注册外部服务（Infura、Alchemy等）
+#    - 无需购买ETH测试币
+#    - 启动速度快（开发模式节点几乎立即可用）
+#    - 资源占用小（适合低配云服务器）
+#    - 完全本地化运行，无需外网依赖
