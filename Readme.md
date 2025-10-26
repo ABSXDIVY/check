@@ -224,12 +224,25 @@ docker-compose --version
    # 在项目目录中执行
     cd /opt/ethereum-attendance/check
     
+    # 首先确保创建了环境配置文件（使用修复后的格式）
+    cp .env.example .env
+    cp server/.env.example server/.env
+
+    # 拉取最新代码以获取环境变量格式修复
+    git pull
+    
     # 一键启动完整系统（以太坊节点 + 后端 + 前端）
-   docker-compose up -d
+   docker-compose up -d --build
 
    # 查看启动状态
    docker-compose ps
    ```
+
+   **注意事项：**
+   - 如果收到"No containers to restart"错误，说明容器尚未创建，请使用`up -d`而非`restart`命令
+   - 环境变量文件现已修复格式，所有值都添加了引号以解决Python-dotenv解析错误
+   - 如需停止服务，使用`docker-compose down`
+   - 服务完全启动后，可以通过服务器IP地址访问（默认端口80）
 
 #### 四、前端连接服务器配置
 

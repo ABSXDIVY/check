@@ -37,8 +37,7 @@ services:
           cpus: '1'  # 限制CPU使用
           memory: 1G  # 限制内存使用
         reservations:
-          cpus: '0.5'
-          memory: 512M
+          memory: 512M  # 仅保留内存配置，移除不支持的CPU保留
     # 健康检查配置
     healthcheck:
       test: ["CMD", "curl", "-s", "http://localhost:8545/"]
@@ -92,8 +91,7 @@ services:
           cpus: '1'
           memory: 1G
         reservations:
-          cpus: '0.5'
-          memory: 512M
+          memory: 512M  # 仅保留内存配置，移除不支持的CPU保留
 
   # 前端服务
   frontend:
