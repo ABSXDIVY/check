@@ -58,17 +58,16 @@ chmod +x setup_aliyun_docker_mirror.sh
 **重要更新**: 已优化Dockerfile，将Node.js版本从18-alpine更改为16-alpine，以确保在阿里云环境下的兼容性和稳定性。Node.js 16-alpine在阿里云镜像源中更稳定可用，可有效避免"not found"错误。
 
 **最新优化**:
+
 1. 配置阿里云Alpine镜像源，显著提升构建速度和稳定性
 2. 移除Dockerfile中的冗余依赖安装步骤，节省构建时间
-3. 优化npm安装命令，添加--no-audit --no-fund --no-progress --prefer-offline参数加速安装
-4. 配置阿里云npm镜像源(registry.npmmirror.com)，大幅提升依赖下载速度
-5. 添加多个npm配置优化项，包括disturl和driver CDN镜像
-6. 删除不必要的开发依赖清理和重新安装步骤
-7. 修复Dockerfile语法错误，确保多行命令正确执行
-8. 实现了多阶段构建优化，减小最终镜像体积
-9. 创建了.dockerignore文件，排除不必要的文件，提高构建效率
-10. 添加了详细的编译错误诊断输出，方便排查问题
-11. 创建了冲突解决工具脚本，解决服务器端有修改无法pull的问题
+3. 优化npm安装命令，添加--no-audit --no-fund参数加速安装
+4. 删除不必要的开发依赖清理和重新安装步骤
+5. 修复Dockerfile语法错误，确保多行命令正确执行
+6. 实现了多阶段构建优化，减小最终镜像体积
+7. 创建了.dockerignore文件，排除不必要的文件，提高构建效率
+8. 添加了详细的编译错误诊断输出，方便排查问题
+9. 创建了冲突解决工具脚本，解决服务器端有修改无法pull的问题
 
 ## 三、冲突解决工具
 

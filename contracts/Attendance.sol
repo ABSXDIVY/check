@@ -342,17 +342,48 @@ contract Attendance {
         }
         // 生成所有测试数据
         else if (keccak256(abi.encodePacked(_testType)) == keccak256(abi.encodePacked("all"))) {
-            generateTestData("students");
-            generateTestData("courses");
-            
-            // 短暂延迟后生成签到数据
-            uint256 nowTime = block.timestamp;
-            for (uint i = 0; i < courseIds.length && i < 2; i++) {
-                courses[courseIds[i]].startTime = nowTime - 3600;
-                courses[courseIds[i]].endTime = nowTime + 3600;
+            // 直接生成学生数据
+            for (uint i = 1; i <= 5; i++) {
+                address testStudent = address(uint160(uint(keccak256(abi.encodePacked(msg.sender, i, block.timestamp)))));
+                if (!students[testStudent].isRegistered) {
+                    string memory name = string(abi.encodePacked("TestStudent", uint2str(i)));
+                    string memory studentId = string(abi.encodePacked("TEST", uint2str(i), "2023"));
+                    students[testStudent] = Student({name: name, studentId: studentId, isRegistered: true});
+                    studentAddresses.push(testStudent);
+                    emit StudentRegistered(testStudent, name, studentId);
+                }
             }
             
-            generateTestData("attendance");
+            // 直接生成课程数据
+            uint256 nowTime = block.timestamp;
+            for (uint i = 1; i <= 3; i++) {
+                string memory name = string(abi.encodePacked("TestCourse", uint2str(i)));
+                uint256 startTime = nowTime - 3600; // 现在就能签到
+                uint256 endTime = nowTime + 3600; // 持续1小时
+                courseIdCounter++;
+                uint256 newCourseId = courseIdCounter;
+                courses[newCourseId] = Course({name: name, startTime: startTime, endTime: endTime, teacher: msg.sender, isActive: true});
+                courseIds.push(newCourseId);
+                emit CourseCreated(newCourseId, name, startTime, endTime);
+            }
+            
+            // 直接生成签到数据
+            if (studentAddresses.length > 0 && courseIds.length > 0) {
+                uint256 studentCount = studentAddresses.length > 3 ? 3 : studentAddresses.length;
+                uint256 courseCount = courseIds.length > 2 ? 2 : courseIds.length;
+                for (uint i = 0; i < studentCount; i++) {
+                    address student = studentAddresses[i];
+                    for (uint j = 0; j < courseCount; j++) {
+                        uint256 courseId = courseIds[j];
+                        if (courses[courseId].isActive) {
+                            if (!attendanceRecords[student][courseId].isPresent) {
+                                attendanceRecords[student][courseId] = AttendanceRecord({courseId: courseId, timestamp: nowTime - 300 + j * 100, isPresent: true});
+                                emit AttendanceRecorded(student, courseId, nowTime - 300 + j * 100);
+                            }
+                        }
+                    }
+                }
+            }
         }
         
         emit TestDataGenerated(msg.sender, _testType);

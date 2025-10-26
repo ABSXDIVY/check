@@ -24,8 +24,23 @@ COPY contracts/ ./contracts/
 COPY scripts/ ./scripts/
 COPY hardhat.config.js ./
 
-# 编译智能合约（添加--verbose标志以便更好地诊断错误）
-RUN npx hardhat compile --verbose
+# 创建.env文件并设置必要的环境变量
+COPY .env.example .env
+RUN sed -i 's/GOERLI_URL=.*/GOERLI_URL="http:\/\/localhost:8545"/' .env && \
+    sed -i 's/PRIVATE_KEY=.*/PRIVATE_KEY="0x0000000000000000000000000000000000000000000000000000000000000001"/' .env && \
+    echo "LOCAL_NODE_URL=http://localhost:8545" >> .env
+
+# 调试信息输出
+RUN echo "==== 环境信息 ====" && \
+    node -v && \
+    npm -v && \
+    ls -la && \
+    echo "==== 依赖检查 ====" && \
+    npm ls --depth=0
+
+# 编译智能合约（添加更详细的错误诊断）
+RUN echo "==== 开始编译智能合约 ====" && \
+    npx hardhat compile --verbose || (echo "编译失败，尝试使用强制编译" && npx hardhat compile --force --verbose)
 
 # 无需清理node_modules和重新安装生产依赖，因为我们只需要编译后的合约文件
 # 这种方法可以避免重复安装依赖，节省构建时间
