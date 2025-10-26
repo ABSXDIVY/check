@@ -122,20 +122,20 @@
 #### 一、服务器环境准备
 
 1. **阿里云服务器配置**：
+
    - 选择ECS云服务器，推荐配置：2核4G或以上
    - 操作系统：Ubuntu 24.04 LTS 64位
    - 安全组开放端口：80/tcp、3001/tcp、22/tcp、8545/tcp、30303/tcp
-
 2. **系统更新与依赖安装**：
 
    ```bash
    # 连接服务器后，以root用户执行
    # 更新系统软件包
    apt update && apt upgrade -y
-   
+
    # 安装必要的基础软件
    apt install -y apt-transport-https ca-certificates curl software-properties-common git
-   
+
    # 优化系统参数（可选）
    sysctl -w net.ipv4.tcp_fin_timeout=30
    sysctl -w vm.swappiness=10
@@ -172,59 +172,59 @@ docker-compose --version
    # 创建项目目录
    mkdir -p /opt/ethereum-attendance
    cd /opt/ethereum-attendance
-   
+
    # 克隆代码
    git clone https://github.com/ABSXDIVY/check.git .
    ```
-
 2. **环境配置**：
 
    ```bash
-   # 创建环境配置文件
-   cp .env.example .env
-   cp server/.env.example server/.env
-   
+   # 创建环境配置文件 - 完整命令格式
+    # 第一个命令复制主环境配置文件
+    cp .env.example .env
+    # 第二个命令复制服务器环境配置文件
+    cp server/.env.example server/.env
+
    # 编辑服务器环境配置（使用Ubuntu 24.04优化参数）
    nano server/.env
    ```
 
    在server/.env中填入以下内容：
+
    ```
    # 以太坊网络配置
    ETHEREUM_RPC_URL=http://ethereum-node:8545
-   
+
    # 服务器配置 - Ubuntu 24.04优化参数
    PORT=3001
    NODE_ENV=production
-   
+
    # Ubuntu 24.04特有的网络优化
    SOCKET_TIMEOUT=30000
    CONNECTION_LIMIT=100
-   
+
    # CORS配置
    ALLOWED_ORIGINS=*
    ```
-
 3. **Ubuntu 24.04专用优化（重要）**：
 
    ```bash
    # 为Ubuntu 24.04优化Docker性能
    echo '{"default-address-pools":[{"base":"172.20.0.0/16","size":24}]}' > /etc/docker/daemon.json
    systemctl restart docker
-   
+
    # 为Docker添加用户权限（可选）
    usermod -aG docker $USER
    ```
-
 4. **启动服务**：
 
    ```bash
    # 在项目目录中执行
    cd /opt/ethereum-attendance
-   
+
    # 一键启动完整系统（以太坊节点 + 后端 + 前端）
    docker-compose up -d
-   
+
    # 查看启动状态
    docker-compose ps
    ```
@@ -241,6 +241,7 @@ docker-compose --version
    ```
 
    确保backend服务的环境变量配置正确：
+
    ```yaml
    environment:
      - NODE_ENV=production
@@ -248,7 +249,6 @@ docker-compose --version
      - ALLOWED_ORIGINS=*
      - PORT=3001
    ```
-
 2. **重启后端服务使配置生效**：
 
    ```bash
@@ -269,23 +269,23 @@ docker-compose --version
    ```
 
    在.env中填入以下内容：
+
    ```
    # 后端API地址（使用您的服务器公网IP）
    REACT_APP_API_URL=http://您的服务器IP:3001/api
-   
+
    # 以太坊RPC节点地址
    REACT_APP_ETHEREUM_RPC_URL=http://您的服务器IP:8545
    ```
-
 2. **重新构建前端**：
 
    ```bash
    # 安装依赖
    npm install
-   
+
    # 构建前端
    npm run build
-   
+
    # 将构建产物复制到Web服务器
    # 例如使用Nginx部署
    ```
