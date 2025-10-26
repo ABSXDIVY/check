@@ -141,7 +141,7 @@ docker --version
 docker-compose --version
 ```
 
-### 4.2 优化系统设置
+### 4.2 优化系统设置 
 
 ```bash
 # 优化系统参数
@@ -176,6 +176,7 @@ cd /opt/ethereum-attendance
 ```
 
 ## 最近更新
+
 - 在前端依赖中添加了axios库，解决了前端构建时找不到axios的错误
 - 优化Dockerfile构建过程，修复构建循环问题
 - 简化智能合约编译命令，移除可能导致问题的详细调试输出
